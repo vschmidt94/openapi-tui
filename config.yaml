@@ -1,0 +1,7 @@
+sites:
+  - name: "Livingdocs Public API"
+    uri: "https://livingdocsio.github.io/openapi/livingdocs-openapi.json"
+    user: ""
+  - name: "Swagger Petstore"
+    uri: "https://petstore.swagger.io/v2/swagger.json"
+    user: ""
