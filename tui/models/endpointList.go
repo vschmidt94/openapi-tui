@@ -9,9 +9,17 @@ import (
 	"net/http"
 )
 
+type state int
+
+const (
+	new state = iota
+	loading
+	loaded
+)
+
 type Endpoint struct {
-	Doc    libopenapi.Document
-	Loaded bool
+	Doc       libopenapi.Document
+	currState state
 }
 
 func NewEndpointsModel() Endpoint {
@@ -23,20 +31,23 @@ func (m Endpoint) Init() tea.Cmd {
 }
 
 func (m Endpoint) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	cmd = nil
 	switch msg := msg.(type) {
 	case MsgOpenApiDocRequest:
-		cmd := getOpenApiSchema(msg.Site)
-		return m, cmd
+		cmd = getOpenApiSchema(msg.Site)
+		m.currState = loading
 	case MsgOpenApiDocResponse:
 		m.Doc = msg.doc
-		m.Loaded = true
+		m.currState = loaded
 	}
 
-	return m, nil
+	return m, cmd
 }
 
 func (m Endpoint) View() string {
-	if !m.Loaded {
+	if m.currState != loaded {
 		return "Loading..."
 	}
 

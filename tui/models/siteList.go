@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+
+	// "github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/vschmidt94/openapi-tui/lib/config"
 	"github.com/vschmidt94/openapi-tui/types"
@@ -11,10 +14,16 @@ import (
 	"strings"
 )
 
+type form interface{}
+
 type siteListModel struct {
-	Sites    list.Model
-	selected bool
-	err      error
+	Sites          list.Model
+	selected       bool
+	err            error
+	showUpdateForm bool
+	updateForm     form
+	windowWidth    int
+	windowHeight   int
 }
 
 /* List Item Delegate for styling */
@@ -70,6 +79,38 @@ func (m siteListModel) Init() tea.Cmd {
 }
 
 func (m siteListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// var cmd  tea.Cmd
+	// var cmds []tea.Cmd
+
+	if m.showUpdateForm {
+		uf := m.updateForm.(updateForm)
+		switch formState := uf.Form.State; formState {
+		case huh.StateNormal:
+			m.updateForm, _ = m.updateForm.(tea.Model).Update(msg)
+		case huh.StateCompleted:
+			m.showUpdateForm = false
+			m.updateForm = nil
+			if uf.isNew {
+				newSite := types.Site{
+					Name:         uf.site.Name,
+					Uri:          uf.site.Uri,
+					User:         uf.site.User,
+					RequiresAuth: uf.site.RequiresAuth,
+				}
+				m.Sites.InsertItem(0, newSite)
+			} else {
+				idx := m.Sites.Cursor()
+				m.Sites.SetItem(idx, *uf.site)
+			}
+		case huh.StateAborted:
+			m.showUpdateForm = false
+			m.updateForm = nil
+			// TODO: handle abort
+		}
+
+		return m, nil
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.setWindowSize(msg)
@@ -80,6 +121,23 @@ func (m siteListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			fmt.Println("Selected site:", m.Sites.SelectedItem())
 			m.selected = true
+		case "u":
+			s := m.SelectedSite()
+			m.updateForm = NewUpdateForm(&s, false)
+			m.showUpdateForm = true
+			if uf, ok := m.updateForm.(updateForm); ok {
+				uf.Form.Run()
+			}
+		case "n":
+			newSite := types.Site{
+				Name: "New Site",
+				Uri:  "http://example.com",
+			}
+			m.updateForm = NewUpdateForm(&newSite, true)
+			m.showUpdateForm = true
+			if uf, ok := m.updateForm.(updateForm); ok {
+				uf.Form.Run()
+			}
 		}
 	}
 
@@ -88,11 +146,17 @@ func (m siteListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m siteListModel) View() string {
+	if m.showUpdateForm {
+		rendered := lipgloss.JoinHorizontal(lipgloss.Top, m.Sites.View(), m.updateForm.(tea.Model).View())
+		return rendered
+	}
 	return m.Sites.View()
 }
 
 func (m *siteListModel) setWindowSize(msg tea.WindowSizeMsg) {
-	m.Sites.SetWidth(msg.Width - 2)
+	m.windowHeight = msg.Height
+	m.windowWidth = msg.Width
+	m.Sites.SetWidth(msg.Width / 3)
 	m.Sites.SetHeight(msg.Height - 2)
 }
 
