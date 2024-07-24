@@ -2,6 +2,7 @@ package models
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	// "github.com/pb33f/libopenapi/renderer"
 	"github.com/vschmidt94/openapi-tui/lib/config"
 )
@@ -9,7 +10,8 @@ import (
 type view int
 
 const (
-	sitesList view = iota
+	sitesListView view = iota
+	updateSiteView
 	schemaView
 )
 
@@ -24,11 +26,14 @@ type mainModel struct {
 func New(cfg config.Config) *mainModel {
 	m := &mainModel{}
 	m.cfg = cfg
+	// order matters to align with view enum
 	siteList := NewSiteList(cfg)
 	m.submodels = append(m.submodels, siteList)
+	m.submodels = append(m.submodels, nil)
 	endpointsModel := NewEndpointsModel()
 	m.submodels = append(m.submodels, endpointsModel)
-	m.activeView = sitesList
+
+	m.activeView = sitesListView
 
 	return m
 }
@@ -45,29 +50,71 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		nextView view
 	)
 
+	// handle global key events
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q":
+		case "ctrl+q":
 			return nil, tea.Quit
 		case "esc":
-			if m.activeView == schemaView {
-				sl, _ := m.submodels[sitesList].(siteListModel)
-				sl.selected = false
-				m.submodels[sitesList] = sl
+			if m.activeView == schemaView || m.activeView == updateSiteView {
+				sl, _ := m.submodels[sitesListView].(SiteListModel)
+				sl.state = Normal
+				m.submodels[sitesListView] = sl
 				return m, tea.ClearScreen
 			}
 		}
 	}
 
+	// send the message to the active view
 	model, cmd = m.submodels[m.activeView].(tea.Model).Update(msg)
 	m.submodels[m.activeView] = model
-	cmds = append(cmds, cmd)
+	if cmd != nil {
+		cmds = append(cmds, cmd)
+	}
 
-	if m.submodels[sitesList].(siteListModel).selected {
-		nextView = schemaView
-	} else {
-		nextView = sitesList
+	// switch views if needed
+	switch m.activeView {
+	case sitesListView:
+		sl, _ := m.submodels[sitesListView].(SiteListModel)
+		switch sl.state {
+		case UpdateRequested:
+			if sl.updateForm == nil {
+				// expected to have a form to use
+				sl.state = Normal
+				nextView = sitesListView
+			} else {
+				m.submodels[updateSiteView] = *sl.updateForm
+				nextView = updateSiteView
+			}
+			// reset site list state so we can return to it eventually
+			sl.state = Normal
+			m.submodels[sitesListView] = sl
+		case Selected:
+			nextView = schemaView
+		}
+	case updateSiteView:
+		uf, _ := m.submodels[updateSiteView].(updateForm)
+		if uf.Form.State == huh.StateCompleted || uf.Form.State == huh.StateAborted {
+			// form is done, update the site and return to list
+			sl, _ := m.submodels[sitesListView].(SiteListModel)
+			if uf.idx == NEW_SITE_IDX {
+				sl.Sites.InsertItem(0, *uf.site)
+			} else {
+				sl.Sites.SetItem(uf.idx, *uf.site)
+			}
+			m.submodels[sitesListView] = sl
+			m.submodels[updateSiteView] = nil
+			nextView = sitesListView
+		} else {
+			// normal state
+			nextView = updateSiteView
+		}
+	case schemaView:
+		em, _ := m.submodels[schemaView].(Endpoint)
+		if em.currState == loaded {
+			nextView = sitesListView
+		}
 	}
 
 	if m.activeView != nextView {
@@ -80,8 +127,11 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m mainModel) View() string {
 	switch m.activeView {
-	case sitesList:
-		return m.submodels[sitesList].(siteListModel).View()
+	case sitesListView:
+		return m.submodels[sitesListView].(SiteListModel).View()
+	case updateSiteView:
+		ufp := m.submodels[updateSiteView].(updateForm)
+		return ufp.View()
 	case schemaView:
 		return m.submodels[schemaView].(Endpoint).View()
 	}
