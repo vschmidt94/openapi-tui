@@ -3,6 +3,8 @@ package models
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/vschmidt94/openapi-tui/types"
+
 	// "github.com/pb33f/libopenapi/renderer"
 	"github.com/vschmidt94/openapi-tui/lib/config"
 )
@@ -58,6 +60,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return nil, tea.Quit
 		case "esc":
 			if m.activeView == schemaView || m.activeView == updateSiteView {
+				m.activeView = sitesListView
 				sl, _ := m.submodels[sitesListView].(SiteListModel)
 				sl.state = Normal
 				m.submodels[sitesListView] = sl
@@ -91,6 +94,12 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			sl.state = Normal
 			m.submodels[sitesListView] = sl
 		case Selected:
+			ep := NewEndpointsModel()
+			selectedSite := sl.Sites.SelectedItem().(types.Site)
+			ep.site = selectedSite
+			m.submodels[schemaView] = ep
+			cmd = m.submodels[schemaView].(Endpoint).Init()
+			cmds = append(cmds, cmd)
 			nextView = schemaView
 		}
 	case updateSiteView:
@@ -111,10 +120,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			nextView = updateSiteView
 		}
 	case schemaView:
-		em, _ := m.submodels[schemaView].(Endpoint)
-		if em.currState == loaded {
-			nextView = sitesListView
-		}
+		nextView = schemaView
 	}
 
 	if m.activeView != nextView {

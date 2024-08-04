@@ -18,16 +18,19 @@ const (
 )
 
 type Endpoint struct {
-	Doc       libopenapi.Document
+	site      types.Site
 	currState state
+	doc       libopenapi.Document
 }
 
 func NewEndpointsModel() Endpoint {
-	return Endpoint{}
+	return Endpoint{
+		currState: new,
+	}
 }
 
 func (m Endpoint) Init() tea.Cmd {
-	return nil
+	return getOpenApiSchema(m.site)
 }
 
 func (m Endpoint) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -39,7 +42,7 @@ func (m Endpoint) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = getOpenApiSchema(msg.Site)
 		m.currState = loading
 	case MsgOpenApiDocResponse:
-		m.Doc = msg.doc
+		m.doc = msg.doc
 		m.currState = loaded
 	}
 
@@ -51,7 +54,8 @@ func (m Endpoint) View() string {
 		return "Loading..."
 	}
 
-	return fmt.Sprintf("%v", m.Doc)
+	specInfo := m.doc.GetSpecInfo()
+	return fmt.Sprintf("Retrieved document.\n Format: %v", specInfo.SpecFormat)
 }
 
 func getOpenApiSchema(site types.Site) tea.Cmd {

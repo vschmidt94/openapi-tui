@@ -88,49 +88,6 @@ func (m SiteListModel) Init() tea.Cmd {
 }
 
 func (m SiteListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// var cmd  tea.Cmd
-	// var cmds []tea.Cmd
-
-	//if m.showUpdateForm {
-	//	switch msg.(type) {
-	//	case tea.KeyMsg:
-	//		i++
-	//	}
-	//	// process the form
-	//	form, cmd := m.updateForm.(updateForm).Update(msg)
-	//	f, _ := form.(*huh.Form)
-	//	uf, _ := m.updateForm.(updateForm)
-	//	if f != nil {
-	//		m.updateForm = f
-	//		cmds = append(cmds, cmd)
-	//	}
-	//
-	//	switch formState := uf.Form.State; formState {
-	//	case huh.StateNormal:
-	//		m.updateForm, _ = m.updateForm.(tea.Model).Update(msg)
-	//	case huh.StateCompleted:
-	//		m.showUpdateForm = false
-	//		m.updateForm = nil
-	//		if uf.isNew {
-	//			newSite := types.Site{
-	//				Name:         uf.site.Name,
-	//				Uri:          uf.site.Uri,
-	//				User:         uf.site.User,
-	//				RequiresAuth: uf.site.RequiresAuth,
-	//			}
-	//			m.Sites.InsertItem(0, newSite)
-	//		} else {
-	//			idx := m.Sites.Cursor()
-	//			m.Sites.SetItem(idx, *uf.site)
-	//		}
-	//	case huh.StateAborted:
-	//		m.showUpdateForm = false
-	//		m.updateForm = nil
-	//		// TODO: handle abort
-	//	}
-	//
-	//	return m, nil
-	//}
 
 	var (
 		s   types.Site
