@@ -55,7 +55,8 @@ func (m Endpoint) View() string {
 	}
 
 	specInfo := m.doc.GetSpecInfo()
-	return fmt.Sprintf("Retrieved document.\n Format: %v", specInfo.SpecFormat)
+	apiSchema := specInfo.APISchema
+	return fmt.Sprintf("Retrieved document.\n Format: %v", apiSchema)
 }
 
 func getOpenApiSchema(site types.Site) tea.Cmd {
