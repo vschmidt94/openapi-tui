@@ -12,7 +12,8 @@ explore some of the [Charm](https://github.com/charmbracelet) libraries.
 
 ## Motivation
 
-I interact with many APIs via their Swagger UIs and I wanted to see if I could create a 
-TUI that would allow me to interact with them in a more efficient way.
+As I interact with many APIs via their Swagger UIs, I wanted a terminal-friendly way to interact with them.
+Also an opportunity to learn more about the OpenAPI specification.
+
 
 
