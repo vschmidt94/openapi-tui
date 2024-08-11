@@ -98,7 +98,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			selectedSite := sl.Sites.SelectedItem().(types.Site)
 			ep.site = selectedSite
 			m.submodels[schemaView] = ep
-			cmd = m.submodels[schemaView].(Endpoint).Init()
+			cmd = m.submodels[schemaView].(EndpointListModel).Init()
 			cmds = append(cmds, cmd)
 			nextView = schemaView
 		}
@@ -139,7 +139,7 @@ func (m mainModel) View() string {
 		ufp := m.submodels[updateSiteView].(updateForm)
 		return ufp.View()
 	case schemaView:
-		return m.submodels[schemaView].(Endpoint).View()
+		return m.submodels[schemaView].(EndpointListModel).View()
 	}
 	return "Unknown View"
 }

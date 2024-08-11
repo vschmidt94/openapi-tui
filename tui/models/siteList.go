@@ -64,6 +64,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, idx int, listItem list.I
 
 	fmt.Fprint(w, fn(str))
 }
+
 func NewSiteList(cfg config.Config) SiteListModel {
 	m := SiteListModel{}
 	m.Sites = list.New([]list.Item{}, itemDelegate{}, 0, 0)
